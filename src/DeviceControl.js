@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import mqtt from "mqtt";
 
 const MQTT_BROKER = "mqtt://localhost:1883"; // Local MQTT broker
-
 const TOPICS = {
   device1: "smartlab/device1",
   device2: "smartlab/device2",
@@ -30,10 +29,7 @@ const DeviceControl = () => {
       console.log(`📩 Received message on topic ${topic}: ${message.toString()}`);
       setDevices((prev) => ({
         ...prev,
-        [topic.includes("device1") ? "device1" :
-        topic.includes("device2") ? "device2" :
-        topic.includes("device3") ? "device3" :
-        "device4"]: message.toString() === "on",
+        [topic]: message.toString() === "on",
       }));
     });
 
