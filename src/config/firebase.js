@@ -1,21 +1,33 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, onValue } from "firebase/database";
+import { getDatabase, ref, set } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBmP1kVAzRK_-TY2CWnRw8NCGVOHmLEUvo",
-  authDomain: "smartlab-7c631.firebaseapp.com",
-  databaseURL: "https://smartlab-7c631-default-rtdb.firebaseio.com",
-  projectId: "smartlab-7c631",
-  storageBucket: "smartlab-7c631.appspot.com",  // ✅ FIXED: Incorrect URL
-  messagingSenderId: "371880256677",
-  appId: "1:371880256677:web:bec7960b4533c2e26f994c",
-  measurementId: "G-FV409YTKQ3"
+  apiKey: "YOUR_REAL_API_KEY",
+  authDomain: "YOUR_REAL_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_REAL_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_REAL_PROJECT_ID",
+  storageBucket: "YOUR_REAL_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_REAL_SENDER_ID",
+  appId: "YOUR_REAL_APP_ID"
 };
 
-// ✅ Initialize Firebase App
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// ✅ Initialize Firebase Database
 const db = getDatabase(app);
 
-export { db, ref, set, onValue };
+// ✅ TEST WRITE FUNCTION
+const testFirebaseWrite = () => {
+  set(ref(db, "test/write"), {
+    message: "Hello, Firebase!",
+    timestamp: Date.now(),
+  }).then(() => {
+    console.log("✅ Test data successfully written to Firebase!");
+  }).catch((error) => {
+    console.error("⚠️ Firebase Write Error:", error);
+  });
+};
+
+// Run this test write when the app starts
+testFirebaseWrite();
+
+export { db, ref, set };
