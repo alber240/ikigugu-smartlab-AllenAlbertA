@@ -6,9 +6,9 @@ import StatusIndicator from "./components/StatusIndicator";
 import SensorChart from "./components/SensorChart";
 import DeviceControl from "./components/DeviceControl";
 import { Container, Grid } from "@mui/material";
-import { db, ref, set, onValue } from "./firebase";  
+import { db, ref, set, onValue } from "./firebase";
 
-const MQTT_BROKER = "mqtt://localhost:1883";
+const MQTT_BROKER = "ws://localhost:9001";// ✅ WebSocket-compatible port
 const TOPICS = {
   temperature: "smartlab/temperature",
   humidity: "smartlab/humidity",
@@ -19,15 +19,7 @@ const TOPICS = {
 };
 
 const Dashboard = () => {
-  const [sensorData, setSensorData] = useState({
-    temperature: null,
-    humidity: null,
-    device1: false,
-    device2: false,
-    device3: false,
-    device4: false,
-  });
-
+  const [sensorData, setSensorData] = useState({});
   const [isConnected, setIsConnected] = useState(false);
 
   // ✅ Store MQTT sensor data in Firebase
@@ -38,6 +30,7 @@ const Dashboard = () => {
     }).catch((error) => console.error("⚠️ Firebase Write Error:", error));
   };
 
+  // ✅ Connect to MQTT Broker
   useEffect(() => {
     const client = mqtt.connect(MQTT_BROKER);
 
@@ -50,7 +43,10 @@ const Dashboard = () => {
     client.on("message", (topic, message) => {
       const value = message.toString();
       saveSensorData(topic, value);
-      setSensorData((prev) => ({ ...prev, [topic]: topic.includes("device") ? value === "on" : parseFloat(value) }));
+      setSensorData((prev) => ({
+        ...prev,
+        [topic]: topic.includes("device") ? value === "on" : parseFloat(value),
+      }));
     });
 
     client.on("error", (error) => {
@@ -68,6 +64,7 @@ const Dashboard = () => {
     return () => client.end();
   }, []);
 
+  // ✅ Fetch sensor data from Firebase
   useEffect(() => {
     Object.keys(TOPICS).forEach((topic) => {
       const sensorRef = ref(db, `sensors/${topic}`);
@@ -79,40 +76,47 @@ const Dashboard = () => {
     });
   }, []);
 
+  // ✅ Fetch data from backend API
   useEffect(() => {
-    fetch('http://localhost:3001/sensors')
+    fetch("http://localhost:3001/sensors")
       .then((res) => res.json())
       .then((data) => {
-        console.log('✅ Sensor Data:', data);  // ✅ This ensures data is fetched
-        setSensorData(data);
+        console.log("✅ Sensor Data from Backend:", data);
+        setSensorData((prev) => ({ ...prev, ...data }));
       })
-      .catch((error) => console.error('⚠️ Fetch Error:', error));
+      .catch((error) => console.error("⚠️ Fetch Error:", error));
   }, []);
-  
 
   return (
     <Container>
       <Navbar />
-      {isConnected ? (
-        <Grid container spacing={2} sx={{ marginTop: 2 }}>
-          {["temperature", "humidity"].map((sensor) => (
-            <Grid item xs={12} md={6} key={sensor}>
-              {sensorData[sensor] !== null ? (
-                <SensorCard title={sensor.charAt(0).toUpperCase() + sensor.slice(1)} value={sensorData[sensor].toFixed(1)} unit={sensor === "temperature" ? "°C" : "%"} />
-              ) : (
-                <p>⏳ Waiting for {sensor} data...</p>
-              )}
-            </Grid>
-          ))}
-          <Grid item xs={12}>
-            {["device1", "device2", "device3", "device4"].map((device) => (
-              <StatusIndicator key={device} title={device.replace("device", "Device ")} isOnline={sensorData[device]} />
-            ))}
+      <Grid container spacing={2} sx={{ marginTop: 2 }}>
+        {["temperature", "humidity"].map((sensor) => (
+          <Grid item xs={12} md={6} key={sensor}>
+            {sensorData[sensor] !== undefined ? (
+              <SensorCard
+                title={sensor.charAt(0).toUpperCase() + sensor.slice(1)}
+                value={sensorData[sensor].toFixed(1)}
+                unit={sensor === "temperature" ? "°C" : "%"}
+              />
+            ) : (
+              <p>⏳ Waiting for {sensor} data...</p>
+            )}
           </Grid>
-          <Grid item xs={12}><SensorChart /></Grid>
-          <Grid item xs={12}><DeviceControl /></Grid>
+        ))}
+        <Grid item xs={12}>
+          {["device1", "device2", "device3", "device4"].map((device) => (
+            <StatusIndicator key={device} title={device.replace("device", "Device ")} isOnline={sensorData[device]} />
+          ))}
         </Grid>
-      ) : (
+        <Grid item xs={12}>
+          <SensorChart />
+        </Grid>
+        <Grid item xs={12}>
+          <DeviceControl />
+        </Grid>
+      </Grid>
+      {!isConnected && (
         <p style={{ textAlign: "center", fontSize: "18px", color: "red" }}>🔴 MQTT Disconnected! Attempting to reconnect...</p>
       )}
     </Container>
